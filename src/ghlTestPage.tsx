@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {  Row } from "react-bootstrap";
+import { Row } from "react-bootstrap";
 // import { redirectToGhlOAuth } from "./ghlAuth";
 import { useNavigate } from "react-router-dom";
 import sha256 from "sha256";
@@ -28,10 +28,10 @@ const GhlTestPage = () => {
     clientSecret: "",
   });
 
-  const [configCallCredential,setConfigCallCredential]=useState({
-    accessToken:'',
-    locationId:''
-  })
+  const [configCallCredential, setConfigCallCredential] = useState({
+    accessToken: "",
+    locationId: "",
+  });
   const [tokenData, setTokenData] = useState<any>("");
   // const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +40,7 @@ const GhlTestPage = () => {
     getCredential();
   }, []);
 
-
-    //api call to get the client id and secret id from firebase
+  //api call to get the client id and secret id from firebase
   const getCredential = () => {
     //console.log('token', window.env.GET_GHL_TOKEN)
     var xSignatureVal = sha256(getUtcDate() + window?.env?.SECRETKEY);
@@ -58,7 +57,7 @@ const GhlTestPage = () => {
       },
     })
       .then((res) => {
-        console.log('credential details',res.data);
+        console.log("credential details", res.data);
         if (res.data.statuscode == "0") {
           setConfig((prev) => ({
             ...prev,
@@ -72,7 +71,6 @@ const GhlTestPage = () => {
       });
   };
 
-  
   useEffect(() => {
     if (config.clientId !== "") {
       const params = new URLSearchParams(window.location.search);
@@ -85,11 +83,11 @@ const GhlTestPage = () => {
     }
   }, [config]);
 
- // console.log('testing',tokenData);
+  // console.log('testing',tokenData);
   // Fetch access token from GHL
   const fetchAccessToken = (code: string) => {
     //setLoading(true);
-   // console.log("🔹 Starting fetchAccessToken with code:", code);
+    // console.log("🔹 Starting fetchAccessToken with code:", code);
 
     if (!config?.clientId || !config?.clientSecret) {
       throw new Error("Missing clientId or clientSecret in config.js");
@@ -115,14 +113,14 @@ const GhlTestPage = () => {
       )
       .then((res) => {
         console.log("✅ Token response received:", res.data);
-        localStorage.setItem('locationId',res.data.locationId)
+        localStorage.setItem("locationId", res.data.locationId);
         setTokenData(res.data);
-  // Extract relevant fields from response
-  const { access_token, locationId } = res.data;
-    setConfigCallCredential({
-    accessToken: access_token,
-    locationId: locationId,
-  });
+        // Extract relevant fields from response
+        const { access_token, locationId } = res.data;
+        setConfigCallCredential({
+          accessToken: access_token,
+          locationId: locationId,
+        });
         if (!res.data.access_token) {
           throw new Error(
             "No access_token found in response. Full response: " +
@@ -132,6 +130,7 @@ const GhlTestPage = () => {
 
         //console.log("🔹 Saving access_token to state and localStorage...");
         setAccessToken(res.data.access_token);
+       
         //localStorage.setItem("ghl_access_token", res.data.access_token);
 
         //console.log("✅ Access token saved successfully!");
@@ -139,13 +138,15 @@ const GhlTestPage = () => {
       });
   };
 
-
-
   useEffect(() => {
     if (tokenData !== "") {
+      console.log("token data", tokenData);
+
       saveTokenData();
     }
   }, [tokenData]);
+
+
 
   const saveTokenData = () => {
     var xSignatureVal = sha256(getUtcDate() + window?.env?.SECRETKEY);
@@ -163,20 +164,59 @@ const GhlTestPage = () => {
       },
     })
       .then((res) => {
-        console.log('token submitted',res.data)
+        console.log("token submitted", res.data);
         if (res.data.statuscode == "0") {
           //console.log("submission response", res.data);
+          createPaymentConfig(tokenData)
         }
       })
       .catch((err) => {
         console.error(err);
       });
   };
+
+    const createPaymentConfig = (tokenData:any) => {
+    console.log("inside function accesstoken", tokenData.access_token);
+    console.log("inside function locationid", tokenData.locationId);
+    let data = {
+      name: "Latpay Integration",
+      description:
+        "This payment gateway supports payments in UK and AU via cards and wallets.",
+      paymentsUrl: "https://ghlatpay.web.app/createpayment",
+      queryUrl:
+        "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment",
+      imageUrl:
+        "https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png",
+      supportsSubscriptionSchedule: true,
+    };
+    axios({
+      method: "post",
+      url: "https://services.leadconnectorhq.com/payments/custom-provider/provider",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Version: "2021-07-28",
+      },
+
+      data: data,
+      params: { locationId: tokenData.locationId },
+    })
+      .then((res) => {
+        console.log("payment provider created", res.data);
+      })
+      .catch((err) => {
+        console.error(
+          "getting error response while creating payment configuration",
+          err
+        );
+      });
+  };
   const navigate = useNavigate();
 
   const buttons = [{ label: "Custom Page Testing", path: "/custom-page" }];
 
- // console.log('tokent data',tokenData)
+  // console.log('tokent data',tokenData)
   return (
     <div style={{ padding: "2rem" }}>
       <Row style={{ justifyContent: "center", marginBottom: "2rem" }}>
@@ -195,7 +235,9 @@ const GhlTestPage = () => {
             {buttons.map((btn, index) => (
               <button
                 key={index}
-                onClick={() => navigate(btn.path,{state:{configCallCredential}})}
+                onClick={() =>
+                  navigate(btn.path, { state: { configCallCredential } })
+                }
                 className="px-6 py-3 rounded-2xl shadow-md bg-white 
                        text-indigo-600 font-semibold transition-all duration-300"
               >

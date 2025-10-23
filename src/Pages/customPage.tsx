@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import sha256 from "sha256";
 import { getUtcDate } from "../Components/UtcDate";
-import { useLocation } from "react-router-dom";
 
 interface LatpayFormInputs {
   merchant_id: string;
@@ -11,11 +10,11 @@ interface LatpayFormInputs {
   data_key: string;
 }
 
+interface ghlPayload {
+  locationId: string;
+  accessToken: string;
+}
 const CustomPage = () => {
-  const location = useLocation();
-  const ghlData = location.state?.configCallCredential;
-  console.log('this is donfig call credential',ghlData)
-
   const [tokenCredential, setTokenCredential] = useState({
     accessToken: "",
     refreshToken: "",
@@ -34,7 +33,72 @@ const CustomPage = () => {
   //   formState: { errors: errorsLive },
   // } = useForm<LatpayFormInputs>();
 
+  const[payloadValue,setPayloadValue]=useState('')
+  console.log('payload value : ',payloadValue)
   useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const payload = await new Promise<ghlPayload>(() => {
+          // Timeout if no response in 10s
+          const timeoutId = setTimeout(() => {
+            window.removeEventListener("message", handleMessage);
+          }, 10000);
+
+          // Handle messages from parent
+          const handleMessage = (event: MessageEvent) => {
+            const data =
+              typeof event.data === "string"
+                ? JSON.parse(event.data)
+                : event.data;
+
+            // Only process trusted origin messages (optional: adjust as needed)
+            if (
+              event.origin.includes("gohighlevel.com") ||
+              event.origin.includes("leadconnectorhq.com") ||
+              event.origin.includes("lpstest.co.uk") ||
+              event.origin.includes("ghlatpay.web.app")
+            ) {
+              if (data?.message === "REQUEST_USER_DATA_RESPONSE") {
+                clearTimeout(timeoutId);
+                window.removeEventListener("message", handleMessage);
+                console.log("✅ Received GHL user data:", data);
+
+
+                axios({
+                  method: "post",
+                  url: "https://a23d4a8edb5f.ngrok-free.app/cert-dev-f6b62/us-central1/ghl_decryptSSO",
+                  data: {
+                    ssoPayload: data.payload,
+                  },
+                })
+                  .then((res: any) => {
+                    console.log("decrypted successfully", res.data);
+                    setPayloadValue(res.data)
+                  })
+                  .catch((err) => {
+                    console.error("error", err);
+                  });
+              }
+            }
+          };
+
+          // Listen for messages
+          window.addEventListener("message", handleMessage);
+
+          // Send request to parent after 500ms
+          setTimeout(() => {
+            console.log("📨 Sending REQUEST_USER_DATA to parent");
+            window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
+          }, 500);
+        });
+
+        console.log("payload value", payload);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    getUserData();
     getAccessToken();
   }, []);
 
@@ -56,12 +120,12 @@ const CustomPage = () => {
       },
     })
       .then((res) => {
-       console.log("token detils", res.data);
+        // console.log("token detils", res.data);
         if (res.data.statuscode == "0") {
           setTokenCredential((prev) => ({
             ...prev,
             accessToken: res.data.statusdesc.accessToken,
-            refreshToken: res.data.statusdesc.refreshToken,
+            refreshToken: res.data.statusdesc.accessToken,
           }));
         }
       })
@@ -69,49 +133,49 @@ const CustomPage = () => {
         console.error(err);
       });
   };
-  useEffect(() => {
-    if (tokenCredential?.accessToken !== "") {
-      createPaymentConfig();
-    }
-  }, [tokenCredential]);
+  // useEffect(() => {
+  //   if (tokenCredential?.accessToken !== "") {
+  //     createPaymentConfig();
+  //   }
+  // }, [tokenCredential]);
 
-  const createPaymentConfig = () => {
-    let data = {
-      name: "Latpay Integration",
-      description:
-        "This payment gateway supports payments in UK and AU via cards and wallets.",
-      paymentsUrl: "https://ghlatpay.web.app/createpayment",
-      queryUrl:
-        "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment",
-      imageUrl:
-        "https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png",
-      supportsSubscriptionSchedule: true,
-    };
-    axios({
-      method: "post",
-      url: "https://services.leadconnectorhq.com/payments/custom-provider/provider",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoQ2xhc3MiOiJMb2NhdGlvbiIsImF1dGhDbGFzc0lkIjoieXoyWWZYTDM3ekRwMTJlUldhNEQiLCJzb3VyY2UiOiJJTlRFR1JBVElPTiIsInNvdXJjZUlkIjoiNjhiODBkNjQ1OTRmNTQzMzY2YzUyNGFjLW1mNTQxM3NyIiwiY2hhbm5lbCI6Ik9BVVRIIiwicHJpbWFyeUF1dGhDbGFzc0lkIjoieXoyWWZYTDM3ekRwMTJlUldhNEQiLCJvYXV0aE1ldGEiOnsic2NvcGVzIjpbInBheW1lbnRzL29yZGVycy5yZWFkb25seSIsInBheW1lbnRzL29yZGVycy53cml0ZSIsInBheW1lbnRzL3N1YnNjcmlwdGlvbnMucmVhZG9ubHkiLCJwYXltZW50cy90cmFuc2FjdGlvbnMucmVhZG9ubHkiLCJwYXltZW50cy9jdXN0b20tcHJvdmlkZXIucmVhZG9ubHkiLCJwYXltZW50cy9jdXN0b20tcHJvdmlkZXIud3JpdGUiLCJwcm9kdWN0cy5yZWFkb25seSIsInByb2R1Y3RzL3ByaWNlcy5yZWFkb25seSJdLCJjbGllbnQiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMiLCJ2ZXJzaW9uSWQiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMiLCJjbGllbnRLZXkiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMtbWY1NDEzc3IifSwiaWF0IjoxNzYwNjA1MTc3Ljc2NiwiZXhwIjoxNzYwNjkxNTc3Ljc2Nn0.c5hD4qB3HyXjvCF2fuIBoS8aovE01OZQow0dh25XrSA-nCdQpcXMc44pAyI-vhM-Tg48WhXlh95arbD7g4_OYPRnz_EPN8nrMPj_Va0opiatJVZU8SNsWhbeIP9lHzkiMbQ9qSQ6CpV-x-P9zYXC7ccXll2vVAomZJ5itTofJHaicEA2P_-WT_GWWlMM4iNvB06UVrOH0JIEdIgUTcc57bhvXoGbxgewpKsuz533qY1n3xK9yTy-eil8_6eOrIhSEm50cTbdPDBirMi2wmgnfPToGpJcARhsS0gO8ARyQxlwP8caFayYGeS8bD4Kea1nuDm6i5YCjJeIFekCV6LlZeOwqnvjq7u4tFOKygZcCD6zSxIFTz02uHjAxxQ9lHqq0XJ3l0yxZwgEjKLhGykYOIOp1bkCVzBmXvDaLwmU1JnGNSEtDTYhS1ViExLsTQgZYb66IASD5bJoDV2cAHR0ckM062AO6_hKmp3HEzdSrU_uKaniIFLKVRseHIFCCgYChL9quBVxyaV3QWhm0oZSl0gZJpuxclaq5NdeVd4CZfErxW5ZTz_6yDUU6yREKb0iuwXBFZ9TE3Hm_be8pA-YiQs9ana1qRiAwfw9gZxccJg5HgCKBgU20LqBt2q7XfM0AwDunZ7OPY-7YjhtZOgWUrfrWJg-NIZ42OErDB1hi-k`,
-        Version: "2021-07-28",
-      },
+  // const createPaymentConfig = () => {
+  //   let data = {
+  //     name: "Latpay Integration",
+  //     description:
+  //       "This payment gateway supports payments in UK and AU via cards and wallets.",
+  //     paymentsUrl: "https://ghlatpay.web.app/createpayment",
+  //     queryUrl:
+  //       "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment",
+  //     imageUrl:
+  //       "https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png",
+  //     supportsSubscriptionSchedule: true,
+  //   };
+  //   axios({
+  //     method: "post",
+  //     url: "https://services.leadconnectorhq.com/payments/custom-provider/provider",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Accept: "application/json",
+  //       Authorization: `Bearer ${tokenCredential.accessToken}`,
+  //       Version: "2021-07-28",
+  //     },
 
-      data: data,
-      params: { locationId: "yz2YfXL37zDp12eRWa4D" },
-    })
-      .then((res) => {
-        console.log("payment provider created", res.data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  };
+  //     data: data,
+  //     params: { locationId: "3NM82unan0ZeRq0Rd8eU" },
+  //   })
+  //     .then(() => {
+  //       //console.log("payment provider created", res.data);
+  //     })
+  //     .catch((err) => {
+  //       console.error(err);
+  //     });
+  // };
 
   const [showResult, setShowResult] = useState(false);
   //   test function submit
   const onSubmitTest = handleSubmitTest((data) => {
-   // console.log("Test credentials submitted:", data);
+    // console.log("Test credentials submitted:", data);
     newConfigTestCredential(data);
   });
 
@@ -129,17 +193,17 @@ const CustomPage = () => {
     axios({
       method: "post",
       url: "https://services.leadconnectorhq.com/payments/custom-provider/connect",
-      params: { locationId: "yz2YfXL37zDp12eRWa4D" },
+      params: { locationId: "3NM82unan0ZeRq0Rd8eU" },
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        Authorization: `Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoQ2xhc3MiOiJMb2NhdGlvbiIsImF1dGhDbGFzc0lkIjoieXoyWWZYTDM3ekRwMTJlUldhNEQiLCJzb3VyY2UiOiJJTlRFR1JBVElPTiIsInNvdXJjZUlkIjoiNjhiODBkNjQ1OTRmNTQzMzY2YzUyNGFjLW1mNTQxM3NyIiwiY2hhbm5lbCI6Ik9BVVRIIiwicHJpbWFyeUF1dGhDbGFzc0lkIjoieXoyWWZYTDM3ekRwMTJlUldhNEQiLCJvYXV0aE1ldGEiOnsic2NvcGVzIjpbInBheW1lbnRzL29yZGVycy5yZWFkb25seSIsInBheW1lbnRzL29yZGVycy53cml0ZSIsInBheW1lbnRzL3N1YnNjcmlwdGlvbnMucmVhZG9ubHkiLCJwYXltZW50cy90cmFuc2FjdGlvbnMucmVhZG9ubHkiLCJwYXltZW50cy9jdXN0b20tcHJvdmlkZXIucmVhZG9ubHkiLCJwYXltZW50cy9jdXN0b20tcHJvdmlkZXIud3JpdGUiLCJwcm9kdWN0cy5yZWFkb25seSIsInByb2R1Y3RzL3ByaWNlcy5yZWFkb25seSJdLCJjbGllbnQiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMiLCJ2ZXJzaW9uSWQiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMiLCJjbGllbnRLZXkiOiI2OGI4MGQ2NDU5NGY1NDMzNjZjNTI0YWMtbWY1NDEzc3IifSwiaWF0IjoxNzYwNjA1MTc3Ljc2NiwiZXhwIjoxNzYwNjkxNTc3Ljc2Nn0.c5hD4qB3HyXjvCF2fuIBoS8aovE01OZQow0dh25XrSA-nCdQpcXMc44pAyI-vhM-Tg48WhXlh95arbD7g4_OYPRnz_EPN8nrMPj_Va0opiatJVZU8SNsWhbeIP9lHzkiMbQ9qSQ6CpV-x-P9zYXC7ccXll2vVAomZJ5itTofJHaicEA2P_-WT_GWWlMM4iNvB06UVrOH0JIEdIgUTcc57bhvXoGbxgewpKsuz533qY1n3xK9yTy-eil8_6eOrIhSEm50cTbdPDBirMi2wmgnfPToGpJcARhsS0gO8ARyQxlwP8caFayYGeS8bD4Kea1nuDm6i5YCjJeIFekCV6LlZeOwqnvjq7u4tFOKygZcCD6zSxIFTz02uHjAxxQ9lHqq0XJ3l0yxZwgEjKLhGykYOIOp1bkCVzBmXvDaLwmU1JnGNSEtDTYhS1ViExLsTQgZYb66IASD5bJoDV2cAHR0ckM062AO6_hKmp3HEzdSrU_uKaniIFLKVRseHIFCCgYChL9quBVxyaV3QWhm0oZSl0gZJpuxclaq5NdeVd4CZfErxW5ZTz_6yDUU6yREKb0iuwXBFZ9TE3Hm_be8pA-YiQs9ana1qRiAwfw9gZxccJg5HgCKBgU20LqBt2q7XfM0AwDunZ7OPY-7YjhtZOgWUrfrWJg-NIZ42OErDB1hi-k`,
+        Authorization: `Bearer ${tokenCredential.accessToken}`,
         Version: "2021-07-28",
       },
       data: credentials,
     })
       .then((res) => {
-        console.log('response after the payment configration',res.data);
+        //console.log(res.data);
         if (res.data !== "") {
           setShowResult(true);
         }
