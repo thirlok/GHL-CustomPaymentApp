@@ -28,24 +28,20 @@ declare global {
 
     };
     env: {
-      baseUrl: string;
+      BASE_URL: string;
       clientId: string;
-      clientSecret: string;
-      sos: string;
-      code: string;
-      access_token: string;
-      refreshToken: string;
-      userType: string;
-      companyId: string;
-      locationId: string;
-      scope: string;
-      expires_in: NUmber;
-      userId: string;
       AUTH_CHECK_URL:string,
       HPS_URL:string,
-      SECRETKEY:string,
-      GET_GHL_TOKEN:string,
-      SAVE_TOKEN:string
+      DB_SECRET_KEY:string,
+      DB_GET_CREDENTIALS:string,
+      DB_TOKEN:string,
+      DB_DECRYPT_SSO_PAYLOAD:string,
+      QUERY_PAYMENT_URL:string,
+      CREATE_PAYMENT_URL:string,
+      IMAGE_URL:string,
+      GHL_CREATEPAYMENT_CONFIG:string,
+      GHL_CREATEPAYMENT_INTEGRATION:string,
+      GHL_FETCH_USER_DETAILS:string,
     };
   }
 }

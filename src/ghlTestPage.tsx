@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Row } from "react-bootstrap";
-// import { redirectToGhlOAuth } from "./ghlAuth";
-import { useNavigate } from "react-router-dom";
 import sha256 from "sha256";
 import { getUtcDate } from "./Components/UtcDate";
-// import { redirectToGhlOAuth } from "./ghlAuth";
 
 // Types
 interface AppConfig {
@@ -22,16 +19,17 @@ interface AccessTokenResponse {
 
 const GhlTestPage = () => {
   //const [loading, setLoading] = useState(false);
+  const timeStampVal = getUtcDate();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig>({
     clientId: "",
     clientSecret: "",
   });
 
-  const [configCallCredential, setConfigCallCredential] = useState({
-    accessToken: "",
-    locationId: "",
-  });
+  // const [configCallCredential, setConfigCallCredential] = useState({
+  //   accessToken: "",
+  //   locationId: "",
+  // });
   const [tokenData, setTokenData] = useState<any>("");
   // const [error, setError] = useState<string | null>(null);
 
@@ -43,17 +41,17 @@ const GhlTestPage = () => {
   //api call to get the client id and secret id from firebase
   const getCredential = () => {
     //console.log('token', window.env.GET_GHL_TOKEN)
-    var xSignatureVal = sha256(getUtcDate() + window?.env?.SECRETKEY);
+    const xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
     //console.log('signature',xSignatureVal);
     axios({
       method: "post",
-      url: window.env.GET_GHL_TOKEN,
+      url: window.env.DB_GET_CREDENTIALS,
       headers: {
         " X-Signature": xSignatureVal,
       },
       data: {
         mode: "live",
-        timeStamp: getUtcDate(),
+        timeStamp: timeStampVal,
       },
     })
       .then((res) => {
@@ -96,7 +94,7 @@ const GhlTestPage = () => {
     //console.log("🔹 Sending request to OAuth token endpoint...");
     axios
       .post<AccessTokenResponse>(
-        "https://services.leadconnectorhq.com/oauth/token",
+        window.env.GHL_FETCH_USER_DETAILS,
         new URLSearchParams({
           client_id: config.clientId,
           client_secret: config.clientSecret,
@@ -113,28 +111,20 @@ const GhlTestPage = () => {
       )
       .then((res) => {
         console.log("✅ Token response received:", res.data);
-        localStorage.setItem("locationId", res.data.locationId);
         setTokenData(res.data);
         // Extract relevant fields from response
-        const { access_token, locationId } = res.data;
-        setConfigCallCredential({
-          accessToken: access_token,
-          locationId: locationId,
-        });
+        //const { access_token, locationId } = res.data;
+        // setConfigCallCredential({
+        //   accessToken: access_token,
+        //   locationId: locationId,
+        // });
         if (!res.data.access_token) {
           throw new Error(
             "No access_token found in response. Full response: " +
-              JSON.stringify(res.data)
+            JSON.stringify(res.data)
           );
         }
-
-        //console.log("🔹 Saving access_token to state and localStorage...");
         setAccessToken(res.data.access_token);
-       
-        //localStorage.setItem("ghl_access_token", res.data.access_token);
-
-        //console.log("✅ Access token saved successfully!");
-        //setLoading(false);
       });
   };
 
@@ -146,19 +136,17 @@ const GhlTestPage = () => {
     }
   }, [tokenData]);
 
-
-
   const saveTokenData = () => {
-    var xSignatureVal = sha256(getUtcDate() + window?.env?.SECRETKEY);
+    var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
     axios({
       method: "post",
-      url: window.env.SAVE_TOKEN,
+      url: window.env.DB_TOKEN,
       headers: {
         "X-Signature": xSignatureVal,
       },
       data: {
         action: "save",
-        timeStamp: getUtcDate(),
+        timeStamp: timeStampVal,
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
       },
@@ -167,7 +155,7 @@ const GhlTestPage = () => {
         console.log("token submitted", res.data);
         if (res.data.statuscode == "0") {
           //console.log("submission response", res.data);
-          createPaymentConfig(tokenData)
+          createPaymentConfig(tokenData);
         }
       })
       .catch((err) => {
@@ -175,23 +163,23 @@ const GhlTestPage = () => {
       });
   };
 
-    const createPaymentConfig = (tokenData:any) => {
+  const createPaymentConfig = (tokenData: any) => {
     console.log("inside function accesstoken", tokenData.access_token);
     console.log("inside function locationid", tokenData.locationId);
     let data = {
       name: "Latpay Integration",
       description:
         "This payment gateway supports payments in UK and AU via cards and wallets.",
-      paymentsUrl: "https://ghlatpay.web.app/createpayment",
+      paymentsUrl: window.env.CREATE_PAYMENT_URL,
       queryUrl:
-        "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment",
+        window.env.QUERY_PAYMENT_URL,
       imageUrl:
-        "https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png",
+        window.env.IMAGE_URL,
       supportsSubscriptionSchedule: true,
     };
     axios({
       method: "post",
-      url: "https://services.leadconnectorhq.com/payments/custom-provider/provider",
+      url: window.env.GHL_CREATEPAYMENT_CONFIG,
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -212,9 +200,6 @@ const GhlTestPage = () => {
         );
       });
   };
-  const navigate = useNavigate();
-
-  const buttons = [{ label: "Custom Page Testing", path: "/custom-page" }];
 
   // console.log('tokent data',tokenData)
   return (
@@ -231,30 +216,6 @@ const GhlTestPage = () => {
         <div>
           <h3>Successfully integrated </h3>
           <p>Feel free to close the page </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 ">
-            {buttons.map((btn, index) => (
-              <button
-                key={index}
-                onClick={() =>
-                  navigate(btn.path, { state: { configCallCredential } })
-                }
-                className="px-6 py-3 rounded-2xl shadow-md bg-white 
-                       text-indigo-600 font-semibold transition-all duration-300"
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-          {/* <pre
-            style={{
-              backgroundColor: "#f2f2f2",
-              padding: "1rem",
-              borderRadius: "6px",
-              wordWrap: "break-word",
-            }}
-          >
-            {accessToken}
-          </pre> */}
         </div>
       )}
 

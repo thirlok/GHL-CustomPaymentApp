@@ -15,6 +15,7 @@ interface ghlPayload {
   accessToken: string;
 }
 const CustomPage = () => {
+  const timeStampVal = getUtcDate();
   const [tokenCredential, setTokenCredential] = useState({
     accessToken: "",
     refreshToken: "",
@@ -33,11 +34,16 @@ const CustomPage = () => {
   //   formState: { errors: errorsLive },
   // } = useForm<LatpayFormInputs>();
 
-  const[payloadValue,setPayloadValue]=useState('')
-  console.log('payload value : ',payloadValue)
+  const [payloadValue, setPayloadValue] = useState<any>(null);
+  console.log('payload value : ', payloadValue)
+
+
   useEffect(() => {
+
     const getUserData = async () => {
+
       try {
+
         const payload = await new Promise<ghlPayload>(() => {
           // Timeout if no response in 10s
           const timeoutId = setTimeout(() => {
@@ -52,28 +58,23 @@ const CustomPage = () => {
                 : event.data;
 
             // Only process trusted origin messages (optional: adjust as needed)
-            if (
-              event.origin.includes("gohighlevel.com") ||
-              event.origin.includes("leadconnectorhq.com") ||
-              event.origin.includes("lpstest.co.uk") ||
-              event.origin.includes("ghlatpay.web.app")
-            ) {
+            {
               if (data?.message === "REQUEST_USER_DATA_RESPONSE") {
                 clearTimeout(timeoutId);
                 window.removeEventListener("message", handleMessage);
-                console.log("✅ Received GHL user data:", data);
+                console.log("Received GHL user data:", data);
 
 
                 axios({
                   method: "post",
-                  url: "https://a23d4a8edb5f.ngrok-free.app/cert-dev-f6b62/us-central1/ghl_decryptSSO",
+                  url: window.env.DB_DECRYPT_SSO_PAYLOAD,
                   data: {
                     ssoPayload: data.payload,
                   },
                 })
                   .then((res: any) => {
                     console.log("decrypted successfully", res.data);
-                    setPayloadValue(res.data)
+                    setPayloadValue(res.data.payload);
                   })
                   .catch((err) => {
                     console.error("error", err);
@@ -103,18 +104,18 @@ const CustomPage = () => {
   }, []);
 
   const getAccessToken = () => {
-    var xSignatureVal = sha256(getUtcDate() + window?.env?.SECRETKEY);
+    var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
     //console.log("token", window.env.SAVE_TOKEN);
     axios({
       method: "post",
-      url: window.env.SAVE_TOKEN,
+      url: window.env.DB_TOKEN,
       headers: {
         "X-Signature": xSignatureVal,
       },
       data: {
         mode: "live",
         action: "get",
-        timeStamp: getUtcDate(),
+        timeStamp: timeStampVal,
         accessToken: "",
         refreshToken: "",
       },
@@ -133,44 +134,6 @@ const CustomPage = () => {
         console.error(err);
       });
   };
-  // useEffect(() => {
-  //   if (tokenCredential?.accessToken !== "") {
-  //     createPaymentConfig();
-  //   }
-  // }, [tokenCredential]);
-
-  // const createPaymentConfig = () => {
-  //   let data = {
-  //     name: "Latpay Integration",
-  //     description:
-  //       "This payment gateway supports payments in UK and AU via cards and wallets.",
-  //     paymentsUrl: "https://ghlatpay.web.app/createpayment",
-  //     queryUrl:
-  //       "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment",
-  //     imageUrl:
-  //       "https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png",
-  //     supportsSubscriptionSchedule: true,
-  //   };
-  //   axios({
-  //     method: "post",
-  //     url: "https://services.leadconnectorhq.com/payments/custom-provider/provider",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       Accept: "application/json",
-  //       Authorization: `Bearer ${tokenCredential.accessToken}`,
-  //       Version: "2021-07-28",
-  //     },
-
-  //     data: data,
-  //     params: { locationId: "3NM82unan0ZeRq0Rd8eU" },
-  //   })
-  //     .then(() => {
-  //       //console.log("payment provider created", res.data);
-  //     })
-  //     .catch((err) => {
-  //       console.error(err);
-  //     });
-  // };
 
   const [showResult, setShowResult] = useState(false);
   //   test function submit
@@ -192,8 +155,8 @@ const CustomPage = () => {
 
     axios({
       method: "post",
-      url: "https://services.leadconnectorhq.com/payments/custom-provider/connect",
-      params: { locationId: "3NM82unan0ZeRq0Rd8eU" },
+      url: window.env.GHL_CREATEPAYMENT_INTEGRATION,
+      params: { locationId: payloadValue?.activeLocation },
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",

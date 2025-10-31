@@ -1,0 +1,16 @@
+window.env = {
+  BASE_URL:'https://ghlatpay.web.app/',
+  DB_SECRET_KEY: "03d744e13f0be32db6fb7ef7c2ba470ac6e40a07ec00e65b68fd0d869ef74172",
+  HPS_URL:'https://lateralpayments.com/checkout/Scripts/Latpay3.js',
+  clientId:'68b80d64594f543366c524ac-mf5413sr',
+  AUTH_CHECK_URL:'https://lateralpayments.com/checkout/authorise/authstatuscheck',
+  DB_DECRYPT_SSO_PAYLOAD:'https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_decryptSSO',
+  QUERY_PAYMENT_URL:'https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_queryPayment',
+  DB_GET_CREDENTIALS:'https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getCredentials',
+  DB_TOKEN:'https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_tokens',
+  CREATE_PAYMENT_URL:'https://ghlatpay.web.app/createpayment',
+  IMAGE_URL:'https://latpay.com/wp-content/uploads/2017/11/lat-pay-logo-300x135.png',
+  GHL_CREATEPAYMENT_CONFIG:'https://services.leadconnectorhq.com/payments/custom-provider/provider',
+  GHL_CREATEPAYMENT_INTEGRATION:'https://services.leadconnectorhq.com/payments/custom-provider/connect',
+  GHL_FETCH_USER_DETAILS:'https://services.leadconnectorhq.com/oauth/token',
+};

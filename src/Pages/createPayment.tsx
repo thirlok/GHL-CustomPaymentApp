@@ -27,42 +27,33 @@ const CreatePayment = () => {
     //console.log("inside useEffect - iFrame loading");
 
     const handleMessage = (event: MessageEvent) => {
-      if (
-        event.origin.includes("gohighlevel.com") ||
-        event.origin.includes("leadconnectorhq.com") ||
-        event.origin.includes("lpstest.co.uk") ||
-        event.origin.includes("ghlatpay.web.app") // Include your domain
-      ) {
-        // Parse event data
-        let data: openfunctiondata;
-        try {
-          data =
-            typeof event.data === "string"
-              ? JSON.parse(event.data)
-              : event.data;
-          //console.log("Parsed data:", data);
-        } catch (e) {
-          console.error("Failed to parse event data:", event.data, e);
-          return;
-        }
+      // Parse event data
+      let data: openfunctiondata;
+      try {
+        data =
+          typeof event.data === "string"
+            ? JSON.parse(event.data)
+            : event.data;
+        //console.log("Parsed data:", data);
+      } catch (e) {
+        console.error("Failed to parse event data:", event.data, e);
+        return;
+      }
 
-        // Check for payment initiation props or similar
-        if (
-          data &&
-          (data.type === "payment_initiate_props" ||
-            data.type === "initiate_payment" ||
-            data.type === "custom_provider_initiate_payment")
-        ) {
-          //console.log("Received valid payment data:", data);
-          setPaymentData(data.data || data); // Handle nested data
-        } else {
-          console.warn(
-            "Unexpected message type or data:",
-            data?.type || "No type"
-          );
-        }
+      // Check for payment initiation props or similar
+      if (
+        data &&
+        (data.type === "payment_initiate_props" ||
+          data.type === "initiate_payment" ||
+          data.type === "custom_provider_initiate_payment")
+      ) {
+        //console.log("Received valid payment data:", data);
+        setPaymentData(data.data || data); // Handle nested data
       } else {
-        console.error("Invalid origin:", event.origin);
+        console.warn(
+          "Unexpected message type or data:",
+          data?.type || "No type"
+        );
       }
     };
 
@@ -79,6 +70,22 @@ const CreatePayment = () => {
       window.parent.postMessage(readyMessage, "*");
     };
 
+    /*Send ready message with 10min timeout fallback */
+
+    // const waitForReady = () => {
+    //   if (document.readyState === "complete") {
+    //     setTimeout(sendReady, 500);
+    //   } else {
+    //     window.addEventListener("load", () => setTimeout(sendReady, 500));
+    //   }
+
+    //   // ⏰ Safety timeout — send anyway after 10 seconds
+    //   setTimeout(() => {
+    //     console.log("⏰ Timeout reached — sending 'ready' message just in case");
+    //     sendReady();
+    //   }, 10000);
+    // };
+    // waitForReady();
     if (document.readyState === "complete") {
       setTimeout(sendReady, 500);
     } else {
@@ -90,26 +97,24 @@ const CreatePayment = () => {
 
   useEffect(() => {
     if (paymentData != null) {
-     // console.log("publish key", paymentData.publishableKey);
-      const inputString = `${paymentData.currency.toUpperCase()}${
-        paymentData.amount
-      }${paymentData.transactionId}Y${
-        paymentData.publishableKey.split("###")[2]
-      }`;
+      // console.log("publish key", paymentData.publishableKey);
+      const inputString = `${paymentData.currency.toUpperCase()}${paymentData.amount
+        }${paymentData.transactionId}Y${paymentData.publishableKey.split("###")[2]
+        }`;
       //console.log("transkey generation", inputString);
       const hash = sha256(inputString);
-     // console.log("hash value", hash);
+      // console.log("hash value", hash);
       setTransKey(hash);
       loadjQuery2(() => {
         loadLatpayJS2(() => {
-        //  console.log("loading");
+          //  console.log("loading");
           // Clear previous Latpay content
           const $ = (window as any).$;
           $("#latpay-element").empty();
 
           //function returns processing status to set load true
           window.onPaymentAction = (data: any) => {
-           // console.log("inside the onpayment function", data);
+            // console.log("inside the onpayment function", data);
             if (
               data?.status?.statusdesc == "Card payment processing..." &&
               data?.status?.responsetype == "0"
@@ -135,7 +140,7 @@ const CreatePayment = () => {
           // after 3d secure payemnt function got procced and it response is passed to this function
           window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
             //console.log("Payment completed:", val);
-           // console.log("publishable key", paymentData.publishableKey);
+            // console.log("publishable key", paymentData.publishableKey);
             // console.log(
             //   "publish key : ",
             //   `${paymentData.publishableKey.split("###")[0]}###${
@@ -154,13 +159,10 @@ const CreatePayment = () => {
               const successMessage = JSON.stringify({
                 type: "custom_element_success_response",
                 // publicshablekey / amount / currency / transactionID / Data key / reference hps call
-                chargeId: `${paymentData.publishableKey.split("###")[0]}###${
-                  paymentData.publishableKey.split("###")[1]
-                }###${paymentData.publishableKey.split("###")[2]}###${
-                  paymentData.amount
-                }###${paymentData.currency.toUpperCase()}###${
-                  paymentData.transactionId
-                }`,
+                chargeId: `${paymentData.publishableKey.split("###")[0]}###${paymentData.publishableKey.split("###")[1]
+                  }###${paymentData.publishableKey.split("###")[2]}###${paymentData.amount
+                  }###${paymentData.currency.toUpperCase()}###${paymentData.transactionId
+                  }`,
               });
               window.parent.postMessage(successMessage, "*");
 
@@ -189,7 +191,7 @@ const CreatePayment = () => {
             description: paymentData.transactionId, // add trans id
 
             status: () => {
-             // console.log("status", status);
+              // console.log("status", status);
               setInitialLoader(false);
             },
           });
@@ -199,7 +201,7 @@ const CreatePayment = () => {
   }, [paymentData]);
 
   const handleCheckout = () => {
-   // console.log("payment data values - ", paymentData);
+    // console.log("payment data values - ", paymentData);
     setButtonLoader(true);
 
     if (
@@ -225,6 +227,8 @@ const CreatePayment = () => {
       is3dcheck: "Y",
     });
   };
+
+  
   return (
     <div>
       {paymentData ? (
@@ -246,9 +250,8 @@ const CreatePayment = () => {
               type="button"
               onClick={handleCheckout}
               disabled={buttonLoader}
-              className={`relative inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded text-sm font-semibold transition-all duration-150 ease-in-out bg-gradient-to-r from-green-500 to-green-600 text-white  hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg ${
-                buttonLoader ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
+              className={`relative inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded text-sm font-semibold transition-all duration-150 ease-in-out bg-gradient-to-r from-green-500 to-green-600 text-white  hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg ${buttonLoader ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
             >
               <span className={buttonLoader ? "opacity-70 pl-4" : ""}>
                 {buttonLoader ? "Processing..." : "Checkout"}

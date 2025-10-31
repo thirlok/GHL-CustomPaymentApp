@@ -21,7 +21,7 @@ function redirectToGhlOAuth() {
 
     // Build redirect URL
     const redirectUrl =
-      `${window?.env?.baseUrl}/oauth/chooselocation?` +
+      `${window?.env?.BASE_URL}/oauth/chooselocation?` +
       new URLSearchParams({
         response_type: options.requestType,
         redirect_uri: options.redirectUri,
