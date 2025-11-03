@@ -30,7 +30,6 @@ declare global {
     env: {
       BASE_URL: string;
       clientId: string;
-      clientSecret:string,
       AUTH_CHECK_URL:string,
       HPS_URL:string,
       DB_SECRET_KEY:string,
