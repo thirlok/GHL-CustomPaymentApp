@@ -139,7 +139,7 @@ const CreatePayment = () => {
 
           // after 3d secure payemnt function got procced and it response is passed to this function
           window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
-            //console.log("Payment completed:", val);
+            // console.log("Payment completed:", val);
             // console.log("publishable key", paymentData.publishableKey);
             // console.log(
             //   "publish key : ",
@@ -150,7 +150,7 @@ const CreatePayment = () => {
             //   }###${paymentData.currency.toUpperCase()}###${
             //     paymentData.transactionId
             //   }`
-            //);
+            // );
             setButtonLoader(false);
 
             if (val.errorcode == "00") {
@@ -201,7 +201,7 @@ const CreatePayment = () => {
   }, [paymentData]);
 
   const handleCheckout = () => {
-    // console.log("payment data values - ", paymentData);
+    //console.log("payment data values - ", paymentData);
     setButtonLoader(true);
 
     if (

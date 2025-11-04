@@ -35,7 +35,7 @@ const CustomPage = () => {
   // } = useForm<LatpayFormInputs>();
 
   const [payloadValue, setPayloadValue] = useState<any>(null);
-  console.log('payload value : ', payloadValue)
+
 
 
   useEffect(() => {
@@ -100,8 +100,12 @@ const CustomPage = () => {
     };
 
     getUserData();
-    getAccessToken();
+
   }, []);
+
+  useEffect(() => {
+    getAccessToken();
+  }, [payloadValue])
 
   const getAccessToken = () => {
     var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
@@ -121,7 +125,7 @@ const CustomPage = () => {
       },
     })
       .then((res) => {
-        // console.log("token detils", res.data);
+        console.log("token detils", res.data);
         if (res.data.statuscode == "0") {
           setTokenCredential((prev) => ({
             ...prev,
@@ -138,7 +142,18 @@ const CustomPage = () => {
   const [showResult, setShowResult] = useState(false);
   //   test function submit
   const onSubmitTest = handleSubmitTest((data) => {
-    // console.log("Test credentials submitted:", data);
+    console.log("Test credentials submitted:", data);
+    let credentials = {
+      test: {
+        apiKey: data.merchant_id + "###" + data.data_key,
+        publishableKey:
+          data.merchant_id + "###" + data.public_key + "###" + data.data_key,
+      },
+    };
+    console.log('credential value', credentials);
+    console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
+    console.log('location id', payloadValue?.activeLocation);
+    console.log('access token', tokenCredential.accessToken);
     newConfigTestCredential(data);
   });
 
@@ -151,8 +166,10 @@ const CustomPage = () => {
           data.merchant_id + "###" + data.public_key + "###" + data.data_key,
       },
     };
-    //console.log(credentials);
-
+    console.log('credential value', credentials);
+    console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
+    console.log('location id', payloadValue?.activeLocation);
+    console.log('access token', tokenCredential.accessToken);
     axios({
       method: "post",
       url: window.env.GHL_CREATEPAYMENT_INTEGRATION,
@@ -166,13 +183,13 @@ const CustomPage = () => {
       data: credentials,
     })
       .then((res) => {
-        //console.log(res.data);
+        console.log('response receving after configuration', res.data);
         if (res.data !== "") {
           setShowResult(true);
         }
       })
       .catch((err) => {
-        console.error(err);
+        console.error('recived error reponse while doing configuration process', err);
       });
   };
 

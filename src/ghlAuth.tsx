@@ -1,8 +1,5 @@
 function redirectToGhlOAuth() {
   try {
-    // Load config.json from public folder
-  
-
     const options = {
       requestType: "code",
       redirectUri: "https://ghlatpay.web.app/ghlconfig", // update if deployed
@@ -21,7 +18,7 @@ function redirectToGhlOAuth() {
 
     // Build redirect URL
     const redirectUrl =
-      `${window?.env?.BASE_URL}/oauth/chooselocation?` +
+      window?.env?.BASE_URL +
       new URLSearchParams({
         response_type: options.requestType,
         redirect_uri: options.redirectUri,
@@ -40,12 +37,12 @@ function redirectToGhlOAuth() {
 import { useEffect } from 'react'
 
 const GhlAuth = () => {
-  useEffect(()=>{
+  useEffect(() => {
     redirectToGhlOAuth()
-  },[])
+  }, [])
   return (
     <div>
-      
+
     </div>
   )
 }

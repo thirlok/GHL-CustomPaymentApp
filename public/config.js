@@ -1,5 +1,5 @@
 window.env = {
-  BASE_URL:'https://ghlatpay.web.app/',
+  BASE_URL:'https://marketplace.gohighlevel.com/oauth/chooselocation?',
   DB_SECRET_KEY: "03d744e13f0be32db6fb7ef7c2ba470ac6e40a07ec00e65b68fd0d869ef74172",
   HPS_URL:'https://lateralpayments.com/checkout/Scripts/Latpay3.js',
   clientId:'68b80d64594f543366c524ac-mf5413sr',
