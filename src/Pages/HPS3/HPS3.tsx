@@ -208,14 +208,14 @@ const HPS3 = () => {
 
     loadjQuery2(() => {
       loadLatpayJS2(() => {
-        console.log("loading");
+        //console.log("loading");
         // Clear previous Latpay content
         const $ = (window as any).$;
         $("#latpay-element").empty();
 
         //function returns processing status to set load true
         window.onPaymentAction = (data: any) => {
-          console.log(data);
+          //console.log(data);
           if (
             data?.status?.statusdesc == "Card payment processing..." &&
             data?.status?.responsetype == "0"
@@ -240,7 +240,7 @@ const HPS3 = () => {
 
         // after 3d secure payemnt function got procced and it response is passed to this function
         window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
-          console.log("Payment completed:", val);
+          //console.log("Payment completed:", val);
 
           // here we are calling handlepayment function to do authstatus check
           handlePaymentCompleted();
@@ -264,7 +264,7 @@ const HPS3 = () => {
           description: mappedValues.Description,
 
           status: (status: any) => {
-            console.log("status", status);
+            //console.log("status", status);
             setOpenFuntionResult(status);
             setTestLoader(false);
           },
@@ -283,7 +283,7 @@ const HPS3 = () => {
       acc[field.label] = field.value;
       return acc;
     }, {} as Record<string, string>);
-    console.log("Submitted Data:", formattedData);
+    //console.log("Submitted Data:", formattedData);
   };
 
   const [buttonLoader, setButtonLoader] = useState(false);
@@ -306,7 +306,7 @@ const HPS3 = () => {
         return;
       }
 
-      console.log("formdata", formData.TransKey);
+      //console.log("formdata", formData.TransKey);
 
       window.LatpayCheckout.secure3DPayment({
         amount: formData.Amount,
@@ -343,8 +343,8 @@ const HPS3 = () => {
       transactionkey: formData.AuthStatusCheck,
     };
 
-    console.log("Auth Request Payload:", authRequest);
-    console.log("auth url", window.env.AUTH_CHECK_URL);
+    // console.log("Auth Request Payload:", authRequest);
+    // console.log("auth url", window.env.AUTH_CHECK_URL);
     fetch(window.env.AUTH_CHECK_URL, {
       method: "POST",
       headers: {
@@ -354,7 +354,7 @@ const HPS3 = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log(data);
+       // console.log(data);
         setFinalData(data);
         setLoader(false);
         setResultContainer(true);
@@ -405,7 +405,7 @@ const HPS3 = () => {
     setResultContainer(false);
     setFinalData(null);
   };
-  console.log("testVar", localStorage.getItem("username"));
+  //console.log("testVar", localStorage.getItem("username"));
   return (
     <div className="flex flex-col md:flex-row gap-4 px-2 sm:px-4 md:px-6 lg:px-8 py-4">
       {/* slect option*/}

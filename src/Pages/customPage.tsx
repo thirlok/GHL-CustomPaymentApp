@@ -62,7 +62,7 @@ const CustomPage = () => {
               if (data?.message === "REQUEST_USER_DATA_RESPONSE") {
                 clearTimeout(timeoutId);
                 window.removeEventListener("message", handleMessage);
-                console.log("Received GHL user data:", data);
+                //console.log("Received GHL user data:", data);
 
 
                 axios({
@@ -73,7 +73,7 @@ const CustomPage = () => {
                   },
                 })
                   .then((res: any) => {
-                    console.log("decrypted successfully", res.data);
+                    //console.log("decrypted successfully", res.data);
                     setPayloadValue(res.data.payload);
                   })
                   .catch((err) => {
@@ -88,12 +88,12 @@ const CustomPage = () => {
 
           // Send request to parent after 500ms
           setTimeout(() => {
-            console.log("📨 Sending REQUEST_USER_DATA to parent");
+            //console.log(" Sending REQUEST_USER_DATA to parent");
             window.parent.postMessage({ message: "REQUEST_USER_DATA" }, "*");
           }, 500);
         });
 
-        console.log("payload value", payload);
+        //console.log("payload value", payload);
       } catch (err) {
         console.error(err);
       }
@@ -104,12 +104,16 @@ const CustomPage = () => {
   }, []);
 
   useEffect(() => {
-    getAccessToken();
+    if (payloadValue != null) { getAccessToken(); }
+
   }, [payloadValue])
 
   const getAccessToken = () => {
     var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
-    //console.log("token", window.env.SAVE_TOKEN);
+    // console.log('xsignature value', xSignatureVal);
+    // console.log("token url", window.env.DB_TOKEN);
+    // console.log('time stamp value', timeStampVal);
+    // console.log('request structure', { action: 'get', mode: 'live', timeStamp: timeStampVal, locationId: payloadValue?.activeLocation });
     axios({
       method: "post",
       url: window.env.DB_TOKEN,
@@ -120,17 +124,17 @@ const CustomPage = () => {
         mode: "live",
         action: "get",
         timeStamp: timeStampVal,
-        accessToken: "",
-        refreshToken: "",
+        locationId: payloadValue?.activeLocation,
       },
     })
       .then((res) => {
-        console.log("token detils", res.data);
+        //console.log("token detils", res.data);
         if (res.data.statuscode == "0") {
+          // console.log("token detials inside statuscode check", res.data);
           setTokenCredential((prev) => ({
             ...prev,
             accessToken: res.data.statusdesc.accessToken,
-            refreshToken: res.data.statusdesc.accessToken,
+            refreshToken: res.data.statusdesc.refreshToken,
           }));
         }
       })
@@ -142,18 +146,18 @@ const CustomPage = () => {
   const [showResult, setShowResult] = useState(false);
   //   test function submit
   const onSubmitTest = handleSubmitTest((data) => {
-    console.log("Test credentials submitted:", data);
-    let credentials = {
-      test: {
-        apiKey: data.merchant_id + "###" + data.data_key,
-        publishableKey:
-          data.merchant_id + "###" + data.public_key + "###" + data.data_key,
-      },
-    };
-    console.log('credential value', credentials);
-    console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
-    console.log('location id', payloadValue?.activeLocation);
-    console.log('access token', tokenCredential.accessToken);
+    // console.log("Test credentials submitted:", data);
+    // let credentials = {
+    //   test: {
+    //     apiKey: data.merchant_id + "###" + data.data_key,
+    //     publishableKey:
+    //       data.merchant_id + "###" + data.public_key + "###" + data.data_key,
+    //   },
+    // };
+    // console.log('credential value', credentials);
+    // console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
+    // console.log('location id', payloadValue?.activeLocation);
+    // console.log('access token', tokenCredential.accessToken);
     newConfigTestCredential(data);
   });
 
@@ -166,10 +170,10 @@ const CustomPage = () => {
           data.merchant_id + "###" + data.public_key + "###" + data.data_key,
       },
     };
-    console.log('credential value', credentials);
-    console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
-    console.log('location id', payloadValue?.activeLocation);
-    console.log('access token', tokenCredential.accessToken);
+    // console.log('credential value', credentials);
+    // console.log('ghl url', window.env.GHL_CREATEPAYMENT_INTEGRATION);
+    // console.log('location id', payloadValue?.activeLocation);
+    //console.log('access token', tokenCredential);
     axios({
       method: "post",
       url: window.env.GHL_CREATEPAYMENT_INTEGRATION,

@@ -131,6 +131,7 @@ const GhlTestPage = () => {
   };
 
   useEffect(() => {
+
     if (tokenData !== "") {
       console.log("token data", tokenData);
 
@@ -139,7 +140,24 @@ const GhlTestPage = () => {
   }, [tokenData]);
 
   const saveTokenData = () => {
+    //console.log('token url', window.env.DB_TOKEN);
     var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
+    // console.log('xsignature value', xSignatureVal);
+    // console.log('request structure', JSON.stringify({
+    //     action: "save",
+    //     timeStamp: timeStampVal,
+    //     accessToken: tokenData.access_token,
+    //     refreshToken: tokenData.refresh_token,
+    //     companyId: tokenData.companyId,
+    //     expires_in: tokenData.expires_in,
+    //     locationId: tokenData.locationId,
+    //     refreshTokenId: tokenData.refreshTokenId,
+    //     scope: tokenData.scope,
+    //     token_type: tokenData.token_type,
+    //     userId: tokenData.userId,
+    //     userType: tokenData.userType,
+    //     isBulkInstallation: tokenData.isBulkInstallation,
+    //   }))
     axios({
       method: "post",
       url: window.env.DB_TOKEN,
@@ -149,8 +167,17 @@ const GhlTestPage = () => {
       data: {
         action: "save",
         timeStamp: timeStampVal,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        companyId: tokenData.companyId,
+        expires_in: tokenData.expires_in,
+        locationId: tokenData.locationId,
+        refreshTokenId: tokenData.refreshTokenId,
+        scope: tokenData.scope,
+        token_type: tokenData.token_type,
+        userId: tokenData.userId,
+        userType: tokenData.userType,
+        isBulkInstallation: tokenData.isBulkInstallation,
       },
     })
       .then((res) => {
@@ -161,7 +188,7 @@ const GhlTestPage = () => {
         }
       })
       .catch((err) => {
-        console.error(err);
+        console.error('getting error response while saving token', err);
       });
   };
 
