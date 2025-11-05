@@ -42,6 +42,7 @@ declare global {
       GHL_CREATEPAYMENT_CONFIG:string,
       GHL_CREATEPAYMENT_INTEGRATION:string,
       GHL_FETCH_USER_DETAILS:string,
+      DB_GET_TRANSACTIONDETAIL:string
     };
   }
 }

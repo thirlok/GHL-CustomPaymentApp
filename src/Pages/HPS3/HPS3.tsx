@@ -239,7 +239,7 @@ const HPS3 = () => {
         };
 
         // after 3d secure payemnt function got procced and it response is passed to this function
-        window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
+        window.LatpayCheckout.OnPaymentCompleted = () => {
           //console.log("Payment completed:", val);
 
           // here we are calling handlepayment function to do authstatus check
@@ -279,10 +279,10 @@ const HPS3 = () => {
   // function not in use
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formattedData = formValues.reduce((acc, field) => {
-      acc[field.label] = field.value;
-      return acc;
-    }, {} as Record<string, string>);
+    // const formattedData = formValues.reduce((acc, field) => {
+    //   acc[field.label] = field.value;
+    //   return acc;
+    // }, {} as Record<string, string>);
     //console.log("Submitted Data:", formattedData);
   };
 

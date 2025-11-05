@@ -13,4 +13,5 @@ window.env = {
   GHL_CREATEPAYMENT_CONFIG:'https://services.leadconnectorhq.com/payments/custom-provider/provider',
   GHL_CREATEPAYMENT_INTEGRATION:'https://services.leadconnectorhq.com/payments/custom-provider/connect',
   GHL_FETCH_USER_DETAILS:'https://services.leadconnectorhq.com/oauth/token',
+  DB_GET_TRANSACTIONDETAIL:'https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getTransactionDetails'
 };

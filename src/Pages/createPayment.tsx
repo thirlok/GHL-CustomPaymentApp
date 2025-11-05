@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import loadjQuery2 from "./HPS3/Loadjquery";
 import loadLatpayJS2 from "./HPS3/Hps3function";
 import sha256 from "sha256";
+import axios from "axios";
+import { getUtcDate } from "../Components/UtcDate";
 
 declare global {
   interface Window {
@@ -31,9 +33,7 @@ const CreatePayment = () => {
       let data: openfunctiondata;
       try {
         data =
-          typeof event.data === "string"
-            ? JSON.parse(event.data)
-            : event.data;
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         //console.log("Parsed data:", data);
       } catch (e) {
         console.error("Failed to parse event data:", event.data, e);
@@ -98,9 +98,11 @@ const CreatePayment = () => {
   useEffect(() => {
     if (paymentData != null) {
       // console.log("publish key", paymentData.publishableKey);
-      const inputString = `${paymentData.currency.toUpperCase()}${paymentData.amount
-        }${paymentData.transactionId}Y${paymentData.publishableKey.split("###")[2]
-        }`;
+      const inputString = `${paymentData.currency.toUpperCase()}${
+        paymentData.amount
+      }${paymentData.transactionId}Y${
+        paymentData.publishableKey.split("###")[2]
+      }`;
       //console.log("transkey generation", inputString);
       const hash = sha256(inputString);
       // console.log("hash value", hash);
@@ -139,7 +141,7 @@ const CreatePayment = () => {
 
           // after 3d secure payemnt function got procced and it response is passed to this function
           window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
-            // console.log("Payment completed:", val);
+            //console.log("Payment completed:", val);
             // console.log("publishable key", paymentData.publishableKey);
             // console.log(
             //   "publish key : ",
@@ -150,35 +152,63 @@ const CreatePayment = () => {
             //   }###${paymentData.currency.toUpperCase()}###${
             //     paymentData.transactionId
             //   }`
-            // );
+            //);
             setButtonLoader(false);
 
-            if (val.errorcode == "00") {
-              //console.log("in");
-              //transaction success call
-              const successMessage = JSON.stringify({
-                type: "custom_element_success_response",
-                // publicshablekey / amount / currency / transactionID / Data key / reference hps call
-                chargeId: `${paymentData.publishableKey.split("###")[0]}###${paymentData.publishableKey.split("###")[1]
-                  }###${paymentData.publishableKey.split("###")[2]}###${paymentData.amount
-                  }###${paymentData.currency.toUpperCase()}###${paymentData.transactionId
-                  }`,
-              });
-              window.parent.postMessage(successMessage, "*");
+            //transaction success call
+            var timeStampVal = getUtcDate();
+            const xSignatureVal = sha256(
+              timeStampVal + window?.env?.DB_SECRET_KEY
+            );
 
-              //pass ghl success message
-            } else {
-              //pass ghl failure message
-              // transaction rejection call
-              const rejectedMessage = JSON.stringify({
-                type: "custom_element_error_response",
-                error: {
-                  description: "Transaction got rejected", // Error message to be shown to the user
-                },
+            axios({
+              method: "post",
+              url: window.env.DB_GET_TRANSACTIONDETAIL,
+              headers: {
+                " X-Signature": xSignatureVal,
+              },
+              data: {
+                timeStamp: timeStampVal,
+                locationId: paymentData.locationId,
+                transactionId: paymentData.transactionId,
+                orderId: paymentData.orderId,
+              },
+            })
+              .then(() => {
+                //console.log("transaction details", res.data);
+                if (val.errorcode == "00") {
+                  const successMessage = JSON.stringify({
+                    type: "custom_element_success_response",
+                    // publicshablekey / amount / currency / transactionID / Data key / reference hps call
+                    chargeId: `${
+                      paymentData.publishableKey.split("###")[0]
+                    }###${paymentData.publishableKey.split("###")[1]}###${
+                      paymentData.publishableKey.split("###")[2]
+                    }###${
+                      paymentData.amount
+                    }###${paymentData.currency.toUpperCase()}###${
+                      paymentData.transactionId
+                    }`,
+                  });
+                  window.parent.postMessage(successMessage, "*");
+                } else {
+                  //pass ghl failure message
+                  // transaction rejection call
+                  const rejectedMessage = JSON.stringify({
+                    type: "custom_element_error_response",
+                    error: {
+                      description: "Transaction got rejected", // Error message to be shown to the user
+                    },
+                  });
+                  //console.log("rejected message", rejectedMessage);
+                  window.parent.postMessage(rejectedMessage, "*");
+                }
+              })
+              .catch((err) => {
+                console.error("error format : ", err);
               });
-              //console.log("rejected message", rejectedMessage);
-              window.parent.postMessage(rejectedMessage, "*");
-            }
+
+            //pass ghl success message
           };
 
           //calling latpay checkout part with the required details
@@ -201,7 +231,7 @@ const CreatePayment = () => {
   }, [paymentData]);
 
   const handleCheckout = () => {
-    //console.log("payment data values - ", paymentData);
+    // console.log("payment data values - ", paymentData);
     setButtonLoader(true);
 
     if (
@@ -228,7 +258,6 @@ const CreatePayment = () => {
     });
   };
 
-  
   return (
     <div>
       {paymentData ? (
@@ -250,8 +279,9 @@ const CreatePayment = () => {
               type="button"
               onClick={handleCheckout}
               disabled={buttonLoader}
-              className={`relative inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded text-sm font-semibold transition-all duration-150 ease-in-out bg-gradient-to-r from-green-500 to-green-600 text-white  hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg ${buttonLoader ? "cursor-not-allowed" : "cursor-pointer"
-                }`}
+              className={`relative inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded text-sm font-semibold transition-all duration-150 ease-in-out bg-gradient-to-r from-green-500 to-green-600 text-white  hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg ${
+                buttonLoader ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
               <span className={buttonLoader ? "opacity-70 pl-4" : ""}>
                 {buttonLoader ? "Processing..." : "Checkout"}

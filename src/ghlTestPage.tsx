@@ -57,7 +57,7 @@ const GhlTestPage = () => {
       },
     })
       .then((res) => {
-        console.log("credential details", res.data);
+        //console.log("credential details", res.data);
         if (res.data.statuscode == "0") {
           setConfig((prev) => ({
             ...prev,
@@ -112,7 +112,7 @@ const GhlTestPage = () => {
         }
       )
       .then((res) => {
-        console.log("✅ Token response received:", res.data);
+        //console.log("✅ Token response received:", res.data);
         setTokenData(res.data);
         // Extract relevant fields from response
         //const { access_token, locationId } = res.data;
@@ -133,7 +133,7 @@ const GhlTestPage = () => {
   useEffect(() => {
 
     if (tokenData !== "") {
-      console.log("token data", tokenData);
+      //console.log("token data", tokenData);
 
       saveTokenData();
     }
@@ -181,7 +181,7 @@ const GhlTestPage = () => {
       },
     })
       .then((res) => {
-        console.log("token submitted", res.data);
+        //console.log("token submitted", res.data);
         if (res.data.statuscode == "0") {
           //console.log("submission response", res.data);
           createPaymentConfig(tokenData);
@@ -193,8 +193,8 @@ const GhlTestPage = () => {
   };
 
   const createPaymentConfig = (tokenData: any) => {
-    console.log("inside function accesstoken", tokenData.access_token);
-    console.log("inside function locationid", tokenData.locationId);
+    //console.log("inside function accesstoken", tokenData.access_token);
+    //console.log("inside function locationid", tokenData.locationId);
     let data = {
       name: "Latpay Integration",
       description:
@@ -219,8 +219,8 @@ const GhlTestPage = () => {
       data: data,
       params: { locationId: tokenData.locationId },
     })
-      .then((res) => {
-        console.log("payment provider created", res.data);
+      .then(() => {
+        //console.log("payment provider created", res.data);
       })
       .catch((err) => {
         console.error(

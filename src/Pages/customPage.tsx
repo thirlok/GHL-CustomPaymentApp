@@ -36,15 +36,10 @@ const CustomPage = () => {
 
   const [payloadValue, setPayloadValue] = useState<any>(null);
 
-
-
   useEffect(() => {
-
     const getUserData = async () => {
-
       try {
-
-        const payload = await new Promise<ghlPayload>(() => {
+        await new Promise<ghlPayload>(() => {
           // Timeout if no response in 10s
           const timeoutId = setTimeout(() => {
             window.removeEventListener("message", handleMessage);
@@ -64,7 +59,6 @@ const CustomPage = () => {
                 window.removeEventListener("message", handleMessage);
                 //console.log("Received GHL user data:", data);
 
-
                 axios({
                   method: "post",
                   url: window.env.DB_DECRYPT_SSO_PAYLOAD,
@@ -75,9 +69,11 @@ const CustomPage = () => {
                   .then((res: any) => {
                     //console.log("decrypted successfully", res.data);
                     setPayloadValue(res.data.payload);
+                   
                   })
                   .catch((err) => {
-                    console.error("error", err);
+                    console.error("error format", err);
+                   
                   });
               }
             }
@@ -100,13 +96,13 @@ const CustomPage = () => {
     };
 
     getUserData();
-
   }, []);
 
   useEffect(() => {
-    if (payloadValue != null) { getAccessToken(); }
-
-  }, [payloadValue])
+    if (payloadValue != null) {
+      getAccessToken();
+    }
+  }, [payloadValue]);
 
   const getAccessToken = () => {
     var xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
@@ -187,13 +183,16 @@ const CustomPage = () => {
       data: credentials,
     })
       .then((res) => {
-        console.log('response receving after configuration', res.data);
+        //console.log('response receving after configuration', res.data);
         if (res.data !== "") {
           setShowResult(true);
         }
       })
       .catch((err) => {
-        console.error('recived error reponse while doing configuration process', err);
+        console.error(
+          "recived error reponse while doing configuration process",
+          err
+        );
       });
   };
 
