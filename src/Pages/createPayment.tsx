@@ -47,7 +47,10 @@ const CreatePayment = () => {
           data.type === "initiate_payment" ||
           data.type === "custom_provider_initiate_payment")
       ) {
-        //console.log("Received valid payment data:", data);
+        console.log(
+          "GHL out put when page load : Received valid payment data:",
+          data
+        );
         setPaymentData(data.data || data); // Handle nested data
       } else {
         console.warn(
@@ -69,22 +72,6 @@ const CreatePayment = () => {
       //console.log("Sending ready message to parent");
       window.parent.postMessage(readyMessage, "*");
     };
-
-    /*Send ready message with 10min timeout fallback */
-
-    // const waitForReady = () => {
-    //   if (document.readyState === "complete") {
-    //     setTimeout(sendReady, 500);
-    //   } else {
-    //     window.addEventListener("load", () => setTimeout(sendReady, 500));
-    //   }
-
-    //   // ⏰ Safety timeout — send anyway after 10 seconds
-    //   setTimeout(() => {
-    //     console.log("⏰ Timeout reached — sending 'ready' message just in case");
-    //     sendReady();
-    //   }, 10000);
-    // };
     // waitForReady();
     if (document.readyState === "complete") {
       setTimeout(sendReady, 500);
@@ -141,18 +128,8 @@ const CreatePayment = () => {
 
           // after 3d secure payemnt function got procced and it response is passed to this function
           window.LatpayCheckout.OnPaymentCompleted = (val: any) => {
-            //console.log("Payment completed:", val);
+            console.log("Output from Hps : Payment completed:", val);
             // console.log("publishable key", paymentData.publishableKey);
-            // console.log(
-            //   "publish key : ",
-            //   `${paymentData.publishableKey.split("###")[0]}###${
-            //     paymentData.publishableKey.split("###")[1]
-            //   }###${paymentData.publishableKey.split("###")[2]}###${
-            //     paymentData.amount
-            //   }###${paymentData.currency.toUpperCase()}###${
-            //     paymentData.transactionId
-            //   }`
-            //);
             setButtonLoader(false);
 
             //transaction success call
@@ -160,55 +137,140 @@ const CreatePayment = () => {
             const xSignatureVal = sha256(
               timeStampVal + window?.env?.DB_SECRET_KEY
             );
-
+            var getSubTypeUsingOrderIdRequest = {
+              ...paymentData,
+              timeStampVal: timeStampVal,
+            };
+            console.log(
+              "request structure for sub type",
+              getSubTypeUsingOrderIdRequest
+            );
             axios({
               method: "post",
-              url: window.env.DB_GET_TRANSACTIONDETAIL,
+              url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
               headers: {
                 " X-Signature": xSignatureVal,
               },
-              data: {
-                timeStamp: timeStampVal,
-                locationId: paymentData.locationId,
-                transactionId: paymentData.transactionId,
-                orderId: paymentData.orderId,
-              },
+              data: getSubTypeUsingOrderIdRequest,
             })
-              .then(() => {
-                //console.log("transaction details", res.data);
-                if (val.errorcode == "00") {
-                  const successMessage = JSON.stringify({
-                    type: "custom_element_success_response",
-                    // publicshablekey / amount / currency / transactionID / Data key / reference hps call
-                    chargeId: `${
-                      paymentData.publishableKey.split("###")[0]
-                    }###${paymentData.publishableKey.split("###")[1]}###${
-                      paymentData.publishableKey.split("###")[2]
-                    }###${
-                      paymentData.amount
-                    }###${paymentData.currency.toUpperCase()}###${
-                      paymentData.transactionId
-                    }`,
-                  });
-                  window.parent.postMessage(successMessage, "*");
-                } else {
-                  //pass ghl failure message
-                  // transaction rejection call
-                  const rejectedMessage = JSON.stringify({
-                    type: "custom_element_error_response",
-                    error: {
-                      description: "Transaction got rejected", // Error message to be shown to the user
-                    },
-                  });
-                  //console.log("rejected message", rejectedMessage);
-                  window.parent.postMessage(rejectedMessage, "*");
-                }
+              .then((subTyperes) => {
+                console.log("sub type response from ghl", subTyperes.data);
               })
               .catch((err) => {
-                console.error("error format : ", err);
+                console.error("error while getting sub type from ghl", err);
               });
 
             //pass ghl success message
+            // if (val.errorcode == "00") {
+            //   const successMessage = JSON.stringify({
+            //     type: "custom_element_success_response",
+            //     // publicshablekey / amount / currency / transactionID / Data key / reference hps call
+            //     chargeId: `${paymentData.publishableKey.split("###")[0]}###${
+            //       paymentData.publishableKey.split("###")[1]
+            //     }###${paymentData.publishableKey.split("###")[2]}###${
+            //       paymentData.amount
+            //     }###${paymentData.currency.toUpperCase()}###${
+            //       paymentData.transactionId
+            //     }`,
+            //   });
+            //   window.parent.postMessage(successMessage, "*");
+            // } else {
+            //   //pass ghl failure message
+            //   // transaction rejection call
+            //   const rejectedMessage = JSON.stringify({
+            //     type: "custom_element_error_response",
+            //     error: {
+            //       description: "Transaction got rejected", // Error message to be shown to the user
+            //     },
+            //   });
+            //   //console.log("rejected message", rejectedMessage);
+            //   window.parent.postMessage(rejectedMessage, "*");
+            // }
+            // console.log("request structure", {
+            //   timeStamp: timeStampVal,
+            //   locationId: paymentData.locationId,
+            //   transactionId: paymentData.transactionId,
+            //   orderId: paymentData.orderId,
+            // });
+            //api call to get the transaction details from firebase
+            // axios({
+            //   method: "post",
+            //   url: window.env.DB_GET_TRANSACTIONDETAIL,
+            //   headers: {
+            //     " X-Signature": xSignatureVal,
+            //   },
+            //   data: {
+            //     timeStamp: timeStampVal,
+            //     locationId: paymentData.locationId,
+            //     transactionId: paymentData.transactionId,
+            //     orderId: paymentData.orderId,
+            //   },
+            // })
+            //   .then((transactionDetailsRes: any) => {
+            //     console.log("accesstoken check", val);
+            //     console.log("transaction details", transactionDetailsRes.data);
+            //     // var transResul=transactionDetailsRes.data;
+            //     // var xSignatureVal = sha256(
+            //     //   timeStampVal + window?.env?.DB_SECRET_KEY
+            //     // );
+            //     // console.log('xsignature value', xSignatureVal);
+            //     // console.log("token url", window.env.DB_TOKEN);
+            //     // console.log('time stamp value', timeStampVal);
+            //     // console.log('request structure', { action: 'get', mode: 'live', timeStamp: timeStampVal, locationId: payloadValue?.activeLocation });
+
+            //     //api call to get the access token from firebase
+            //   // {axios({
+            //   //   method: "post",
+            //   //   url: window.env.DB_TOKEN,
+            //   //   headers: {
+            //   //     "X-Signature": xSignatureVal,
+            //   //   },
+            //   //   data: {
+            //   //     mode: "live",
+            //   //     action: "get",
+            //   //     timeStamp: timeStampVal,
+            //   //     locationId: transactionDetailsRes.data.statusdesc.altId,
+            //   //   },
+            //   // })
+            //   //   .then((accessTokenRes) => {
+            //   //     //console.log("token detils", transactionDetailsRes.data);
+            //   //     if (accessTokenRes.data.statuscode == "0") {
+            //   //       console.log("token detials inside statuscode check", accessTokenRes.data);
+
+            //   //       console.log(
+            //   //         "accestoken from db",
+            //   //         accessTokenRes.data.statusdesc.accessToken
+            //   //       );
+            //   //       console.log(
+            //   //         "order id from db",
+            //   //         transactionDetailsRes.data.statusdesc._id
+            //   //       );
+            //   //       // axios({
+            //   //       //   method: "post",
+            //   //       //   url: `https://services.leadconnectorhq.com/payments/orders/${transactionDetailsRes.data.statusdesc._id}`,
+            //   //       //   headers: {
+            //   //       //     "Content-Type": "application/json",
+            //   //       //     Accept: "application/json",
+            //   //       //     Authorization: `Bearer ${accessTokenRes.data.statusdesc.access_token}`,
+            //   //       //     Version: "2021-07-28",
+            //   //       //   },
+            //   //       // })
+            //   //       //   .then((orderRes) => {
+            //   //       //     console.log("order response", orderRes.data);
+            //   //       //   })
+            //   //       //   .catch((err) => {
+            //   //       //     console.error("order details error", err);
+            //   //       //   });
+            //   //     }
+            //   //   })
+            //   //   .catch((err) => {
+            //   //     console.error(err);
+            //   //   });}
+
+            //   })
+            //   .catch((err) => {
+            //     console.error("error format : ", err);
+            //   });
           };
 
           //calling latpay checkout part with the required details
