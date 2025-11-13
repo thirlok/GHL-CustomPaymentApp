@@ -55,17 +55,17 @@ const CreatePayment = () => {
         var paymentData = data.data || data;
         var timeStampVal = getUtcDate();
         const xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
-console.log('getsubtypeusing id request',{...paymentData, timeStamp: timeStampVal});
+        console.log("getsubtypeusing id request", {
+          ...paymentData,
+          timeStamp: timeStampVal,
+        });
         axios({
           method: "post",
           url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
           headers: {
             " X-Signature": xSignatureVal,
           },
-          data: {...paymentData,
-            timeStamp: timeStampVal,
-          
-          },
+          data: { ...paymentData, timeStamp: timeStampVal },
         })
           .then((subTyperes) => {
             console.log("sub type response from ghl", subTyperes.data);
@@ -73,7 +73,46 @@ console.log('getsubtypeusing id request',{...paymentData, timeStamp: timeStampVa
               subTyperes.data.statuscode == "0" &&
               subTyperes.data.statusdesc.orderId == paymentData.orderId
             ) {
-              console.log("sub type value", subTyperes.data.statusdesc.subType);
+              if (subTyperes.data.statusdesc.subType === "upsell") {
+                console.log(
+                  "sub type value",
+                  subTyperes.data.statusdesc.subType
+                );
+                console.log("upsellTransaction request value", {
+                  contactId: paymentData.contact.id,
+                  orderId: paymentData.orderId,
+                  transactionId: paymentData.transactionId,
+                  amount: paymentData.amount,
+                  merchantId: paymentData.publishableKey.split("###")[0],
+                  name: paymentData.contact.name,
+                  email: paymentData.contact.email,
+                });
+                axios({
+                  url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_doUpsellTransaction",
+                  method: "post",
+                  data: {
+                    contactId: paymentData.contact.id,
+                    orderId: paymentData.orderId,
+                    transactionId: paymentData.transactionId,
+                    amount: paymentData.amount,
+                    merchantId: paymentData.publishableKey.split("###")[0],
+                    name: paymentData.contact.name,
+                    email: paymentData.contact.email,
+                  },
+                })
+                  .then((upsellTransactionRes) => {
+                    console.log(
+                      "upsell transaction response",
+                      upsellTransactionRes.data
+                    );
+                  })
+                  .catch((err) => {
+                    console.error(
+                      "error while getting upsell transaction",
+                      err
+                    );
+                  });
+              }
             }
           })
           .catch((err) => {
