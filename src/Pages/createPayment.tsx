@@ -55,40 +55,16 @@ const CreatePayment = () => {
         var paymentData = data.data || data;
         var timeStampVal = getUtcDate();
         const xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
-
+console.log('getsubtypeusing id request',{...paymentData, timeStamp: timeStampVal});
         axios({
           method: "post",
           url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
           headers: {
             " X-Signature": xSignatureVal,
           },
-          data: {
+          data: {...paymentData,
             timeStamp: timeStampVal,
-            type: paymentData.type,
-            publishableKey: paymentData.publishableKey,
-            amount: paymentData.amount,
-            currency: paymentData.currency,
-            mode: paymentData.mode,
-            productDetails: paymentData.productDetails,
-            name: paymentData.name,
-            description: paymentData.description,
-            image: paymentData.image,
-            contact: {
-              id: paymentData.contact.id,
-              name: paymentData.contact.name,
-              email: paymentData,
-              contact: paymentData.contact.contact,
-              shippingAddress: {
-                line1: paymentData.contact.shippingAddress.line1,
-                city: paymentData.contact.shippingAddress.city,
-                zipCode: paymentData.contact.shippingAddress.zipCode,
-              },
-            },
-            orderId: paymentData.orderId,
-            invoiceId: paymentData.invoiceId,
-            transactionId: paymentData.transactionId,
-            locationId: paymentData.locationId,
-            language: paymentData.language,
+          
           },
         })
           .then((subTyperes) => {
