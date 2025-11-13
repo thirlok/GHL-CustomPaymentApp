@@ -52,6 +52,57 @@ const CreatePayment = () => {
           data
         );
         setPaymentData(data.data || data); // Handle nested data
+        var paymentData = data.data || data;
+        var timeStampVal = getUtcDate();
+        const xSignatureVal = sha256(timeStampVal + window?.env?.DB_SECRET_KEY);
+
+        axios({
+          method: "post",
+          url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
+          headers: {
+            " X-Signature": xSignatureVal,
+          },
+          data: {
+            timeStamp: timeStampVal,
+            type: paymentData.type,
+            publishableKey: paymentData.publishableKey,
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            mode: paymentData.mode,
+            productDetails: paymentData.productDetails,
+            name: paymentData.name,
+            description: paymentData.description,
+            image: paymentData.image,
+            contact: {
+              id: paymentData.contact.id,
+              name: paymentData.contact.name,
+              email: paymentData,
+              contact: paymentData.contact.contact,
+              shippingAddress: {
+                line1: paymentData.contact.shippingAddress.line1,
+                city: paymentData.contact.shippingAddress.city,
+                zipCode: paymentData.contact.shippingAddress.zipCode,
+              },
+            },
+            orderId: paymentData.orderId,
+            invoiceId: paymentData.invoiceId,
+            transactionId: paymentData.transactionId,
+            locationId: paymentData.locationId,
+            language: paymentData.language,
+          },
+        })
+          .then((subTyperes) => {
+            console.log("sub type response from ghl", subTyperes.data);
+            if (
+              subTyperes.data.statuscode == "0" &&
+              subTyperes.data.statusdesc.orderId == paymentData.orderId
+            ) {
+              console.log("sub type value", subTyperes.data.statusdesc.subType);
+            }
+          })
+          .catch((err) => {
+            console.error("error while getting sub type from ghl", err);
+          });
       } else {
         console.warn(
           "Unexpected message type or data:",
@@ -133,59 +184,33 @@ const CreatePayment = () => {
             setButtonLoader(false);
 
             //transaction success call
-            var timeStampVal = getUtcDate();
-            const xSignatureVal = sha256(
-              timeStampVal + window?.env?.DB_SECRET_KEY
-            );
-            var getSubTypeUsingOrderIdRequest = {
-              ...paymentData,
-              timeStampVal: timeStampVal,
-            };
-            console.log(
-              "request structure for sub type",
-              getSubTypeUsingOrderIdRequest
-            );
-            axios({
-              method: "post",
-              url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
-              headers: {
-                " X-Signature": xSignatureVal,
-              },
-              data: getSubTypeUsingOrderIdRequest,
-            })
-              .then((subTyperes) => {
-                console.log("sub type response from ghl", subTyperes.data);
-              })
-              .catch((err) => {
-                console.error("error while getting sub type from ghl", err);
-              });
 
             //pass ghl success message
-            // if (val.errorcode == "00") {
-            //   const successMessage = JSON.stringify({
-            //     type: "custom_element_success_response",
-            //     // publicshablekey / amount / currency / transactionID / Data key / reference hps call
-            //     chargeId: `${paymentData.publishableKey.split("###")[0]}###${
-            //       paymentData.publishableKey.split("###")[1]
-            //     }###${paymentData.publishableKey.split("###")[2]}###${
-            //       paymentData.amount
-            //     }###${paymentData.currency.toUpperCase()}###${
-            //       paymentData.transactionId
-            //     }`,
-            //   });
-            //   window.parent.postMessage(successMessage, "*");
-            // } else {
-            //   //pass ghl failure message
-            //   // transaction rejection call
-            //   const rejectedMessage = JSON.stringify({
-            //     type: "custom_element_error_response",
-            //     error: {
-            //       description: "Transaction got rejected", // Error message to be shown to the user
-            //     },
-            //   });
-            //   //console.log("rejected message", rejectedMessage);
-            //   window.parent.postMessage(rejectedMessage, "*");
-            // }
+            if (val.errorcode == "00") {
+              const successMessage = JSON.stringify({
+                type: "custom_element_success_response",
+                // publicshablekey / amount / currency / transactionID / Data key / reference hps call
+                chargeId: `${paymentData.publishableKey.split("###")[0]}###${
+                  paymentData.publishableKey.split("###")[1]
+                }###${paymentData.publishableKey.split("###")[2]}###${
+                  paymentData.amount
+                }###${paymentData.currency.toUpperCase()}###${
+                  paymentData.transactionId
+                }`,
+              });
+              window.parent.postMessage(successMessage, "*");
+            } else {
+              //pass ghl failure message
+              // transaction rejection call
+              const rejectedMessage = JSON.stringify({
+                type: "custom_element_error_response",
+                error: {
+                  description: "Transaction got rejected", // Error message to be shown to the user
+                },
+              });
+              //console.log("rejected message", rejectedMessage);
+              window.parent.postMessage(rejectedMessage, "*");
+            }
             // console.log("request structure", {
             //   timeStamp: timeStampVal,
             //   locationId: paymentData.locationId,
