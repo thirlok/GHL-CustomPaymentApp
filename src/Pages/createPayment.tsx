@@ -61,7 +61,7 @@ const CreatePayment = () => {
         });
         axios({
           method: "post",
-          url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_getSubTypeUsingOrderId",
+          url: window.env.DB_GETSUBTYPEUSINGORDERID,
           headers: {
             " X-Signature": xSignatureVal,
           },
@@ -88,7 +88,7 @@ const CreatePayment = () => {
                   email: paymentData.contact.email,
                 });
                 axios({
-                  url: "https://us-central1-cert-dev-f6b62.cloudfunctions.net/ghl_doUpsellTransaction",
+                  url:  window.env.DB_DOUPSELLTRANSACTION,
                   method: "post",
                   data: {
                     contactId: paymentData.contact.id,
