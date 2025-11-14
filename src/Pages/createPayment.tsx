@@ -24,7 +24,7 @@ const CreatePayment = () => {
   const [buttonLoader, setButtonLoader] = useState(false);
   // const [processingLoader, setProcessingLoader] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
-  const [hideCheckout, setHideCheckout] = useState(false);
+  const [hideCheckout, setHideCheckout] = useState(true);
   useEffect(() => {
     //console.log("inside useEffect - iFrame loading");
 
@@ -79,7 +79,6 @@ const CreatePayment = () => {
                     "sub type value",
                     subTyperes.data.statusdesc.subType
                   );
-                  setHideCheckout(true);
 
                   console.log("upsellTransaction request value", {
                     contactId: paymentData.contact.id,
@@ -157,6 +156,7 @@ const CreatePayment = () => {
               }
             } else {
               console.log("not an upsell transaction");
+              setHideCheckout(false);
               const inputString = `${paymentData.currency.toUpperCase()}${
                 paymentData.amount
               }${paymentData.transactionId}Y${
